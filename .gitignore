@@ -6,5 +6,7 @@ Desktop.ini
 # Temporary / editor files
 *.tmp
 *.bak
+*.log
+*.log.txt
 .vscode/
 .idea/
