@@ -1,0 +1,1145 @@
+```html
+<!DOCTYPE html>
+<html lang="tr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATÖLYEMODA — 3D Studio v3.0 | İnteraktif Kıyafet Tasarım Stüdyosu</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter, Plus Jakarta Sans, Bebas Neue, Playfair Display, JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Playfair+Display:ital,wght@0,700;1,600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                        display: ['"Bebas Neue"', 'sans-serif'],
+                        serif: ['"Playfair Display"', 'serif'],
+                    },
+                    colors: {
+                        studio: {
+                            950: '#090a0f',
+                            900: '#11131a',
+                            850: '#161922',
+                            800: '#1e222d',
+                            700: '#2a303f',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Scrollbar & Base Studio Aesthetics */
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background-color: #090a0f;
+            color: #f3f4f6;
+            overflow-x: hidden;
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(17, 19, 26, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(245, 158, 11, 0.35);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(245, 158, 11, 0.7);
+        }
+
+        /* 3D Perspective Studio Floor Grid & Spotlight */
+        .studio-workspace {
+            position: relative;
+            perspective: 1200px;
+            overflow: hidden;
+            background: radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.055) 0%, rgba(245, 158, 11, 0.03) 28%, rgba(9, 10, 15, 0.98) 75%);
+        }
+
+        .studio-spotlight {
+            position: absolute;
+            top: 8%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 540px;
+            height: 540px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(245, 158, 11, 0.11) 0%, rgba(59, 130, 246, 0.04) 45%, transparent 72%);
+            filter: blur(25px);
+            pointer-events: none;
+            z-index: 1;
+            transition: background 0.5s ease;
+        }
+
+        /* User-friendly 3D Perspective Horizon Grid */
+        .studio-perspective-grid {
+            position: absolute;
+            bottom: -110px;
+            left: -25%;
+            width: 150%;
+            height: 360px;
+            transform: rotateX(72deg);
+            transform-origin: center top;
+            background-image:
+                linear-gradient(to right, rgba(245, 158, 11, 0.14) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+            background-size: 44px 44px;
+            -webkit-mask-image: radial-gradient(ellipse 55% 65% at 50% 35%, rgba(0,0,0,0.95) 10%, transparent 80%);
+            mask-image: radial-gradient(ellipse 55% 65% at 50% 35%, rgba(0,0,0,0.95) 10%, transparent 80%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Subtle Ambient Background Grid */
+        .studio-back-grid {
+            position: absolute;
+            inset: 0;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+            background-size: 36px 36px;
+            -webkit-mask-image: radial-gradient(circle at 50% 45%, black 25%, transparent 80%);
+            mask-image: radial-gradient(circle at 50% 45%, black 25%, transparent 80%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* 3D Garment Stage & Tilt Container */
+        .garment-3d-stage {
+            position: relative;
+            z-index: 10;
+            transform-style: preserve-3d;
+            transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: transform;
+        }
+
+        .garment-flip-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            transition: transform 0.65s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .garment-flip-wrapper.is-flipping {
+            transform: rotateY(180deg) scale(0.95);
+        }
+
+        /* Realistic 3D Floor Contact Shadow */
+        .garment-floor-shadow {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 270px;
+            height: 34px;
+            background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.35) 50%, transparent 78%);
+            filter: blur(8px);
+            z-index: 2;
+            pointer-events: none;
+            transition: transform 0.16s ease-out, width 0.3s ease;
+        }
+
+        /* Print Area Boundary Guide (Göğüs / Sırt Baskı Alanı) */
+        .print-boundary {
+            position: absolute;
+            top: 23%;
+            left: 50%;
+            transform: translateX(-50%) translateZ(18px);
+            width: 196px;
+            height: 245px;
+            border: 1.5px dashed rgba(245, 158, 11, 0.38);
+            border-radius: 12px;
+            background: rgba(245, 158, 11, 0.015);
+            transition: border-color 0.25s ease, background-color 0.25s ease, box-shadow 0.25s ease;
+            overflow: visible;
+            z-index: 25;
+        }
+
+        .print-boundary:hover,
+        .print-boundary.active-zone {
+            border-color: rgba(245, 158, 11, 0.85);
+            background: rgba(245, 158, 11, 0.035);
+            box-shadow: 0 0 24px rgba(245, 158, 11, 0.12), inset 0 0 15px rgba(245, 158, 11, 0.05);
+        }
+
+        .print-boundary-label {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #11131a;
+            color: #fbbf24;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            padding: 1px 7px;
+            border-radius: 999px;
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            opacity: 0.75;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        /* Interactive Design Element & 4 Orange Resize Handles */
+        .design-element {
+            position: absolute;
+            cursor: grab;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 8px;
+            border-radius: 6px;
+            border: 1.5px solid transparent;
+            transform-origin: center center;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+            touch-action: none;
+        }
+
+        .design-element:hover {
+            border-color: rgba(245, 158, 11, 0.45);
+        }
+
+        .design-element:active {
+            cursor: grabbing;
+        }
+
+        .design-element.selected {
+            border: 1.5px solid #f59e0b;
+            background: rgba(245, 158, 11, 0.06);
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15), 0 8px 20px rgba(0, 0, 0, 0.35);
+            z-index: 50 !important;
+        }
+
+        /* 4 Corner Orange Resize Handles (Boyutlandırma Tutamakları) */
+        .resize-handle {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #f59e0b;
+            border: 2px solid #ffffff;
+            border-radius: 3px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.65);
+            opacity: 0;
+            pointer-events: none;
+            transition: transform 0.15s ease, opacity 0.15s ease, background-color 0.15s ease;
+            z-index: 60;
+        }
+
+        .design-element.selected .resize-handle {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .resize-handle:hover {
+            background: #ea580c;
+            transform: scale(1.28);
+        }
+
+        .resize-handle.handle-nw {
+            top: -6px;
+            left: -6px;
+            cursor: nwse-resize;
+        }
+        .resize-handle.handle-ne {
+            top: -6px;
+            right: -6px;
+            cursor: nesw-resize;
+        }
+        .resize-handle.handle-sw {
+            bottom: -6px;
+            left: -6px;
+            cursor: nesw-resize;
+        }
+        .resize-handle.handle-se {
+            bottom: -6px;
+            right: -6px;
+            cursor: nwse-resize;
+        }
+
+        /* Product Cards Active Glow */
+        .product-card {
+            transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .product-card:hover {
+            transform: translateY(-2px);
+        }
+        .product-card.active {
+            border-color: #f59e0b;
+            background: linear-gradient(145deg, rgba(245, 158, 11, 0.14) 0%, rgba(30, 34, 45, 0.9) 100%);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.22), inset 0 0 0 1px rgba(245, 158, 11, 0.5);
+        }
+
+        /* Custom Range Slider Styling */
+        input[type="range"].studio-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            background: #2a303f;
+            border-radius: 999px;
+            outline: none;
+        }
+        input[type="range"].studio-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #fbbf24, #ea580c);
+            border: 2px solid #ffffff;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.5);
+            transition: transform 0.15s ease;
+        }
+        input[type="range"].studio-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+
+        /* Custom Color Picker Input */
+        input[type="color"].custom-color-input {
+            -webkit-appearance: none;
+            border: none;
+            padding: 0;
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            cursor: pointer;
+            background: transparent;
+        }
+        input[type="color"].custom-color-input::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+        input[type="color"].custom-color-input::-webkit-color-swatch {
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            border-radius: 8px;
+        }
+
+        /* Subtle Floating Animation for Info Badge */
+        @keyframes floatSlow {
+            0%, 100% { transform: translate(-50%, 0px); }
+            50% { transform: translate(-50%, -3px); }
+        }
+        .floating-badge {
+            animation: floatSlow 3.5s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col bg-studio-950 text-gray-100 select-none">
+
+    <!-- GLOBAL SVG FILTERS FOR REALISTIC 3D MICRO-COTTON TEXTURE & VOLUMETRIC LIGHTING -->
+    <svg width="0" height="0" class="absolute pointer-events-none">
+        <defs>
+            <!-- Realistic Micro-Cotton Fabric Filter -->
+            <filter id="fabric-texture" x="0%" y="0%" width="100%" height="100%">
+                <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" result="noise" />
+                <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.045 0" in="noise" result="softNoise" />
+                <feComposite operator="in" in="softNoise" in2="SourceGraphic" result="textured" />
+                <feBlend mode="multiply" in="SourceGraphic" in2="textured" />
+            </filter>
+
+            <!-- Soft Drop Shadow inside SVG -->
+            <filter id="garment-drop-shadow" x="-15%" y="-10%" width="130%" height="130%">
+                <feDropShadow dx="0" dy="14" stdDeviation="12" flood-color="#000000" flood-opacity="0.55" />
+            </filter>
+
+            <!-- Fabric Overlay Patterns (Desen Sekmesi) -->
+            <pattern id="pattern-grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+            </pattern>
+            <pattern id="pattern-dots" width="16" height="16" patternUnits="userSpaceOnUse">
+                <circle cx="8" cy="8" r="1.8" fill="rgba(255,255,255,0.16)" />
+            </pattern>
+            <pattern id="pattern-diag" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <line x1="0" y1="0" x2="0" y2="16" stroke="rgba(255,255,255,0.13)" stroke-width="3" />
+            </pattern>
+            <pattern id="pattern-camo" width="60" height="60" patternUnits="userSpaceOnUse">
+                <path d="M10,10 Q25,5 30,20 T15,35 Z" fill="rgba(0,0,0,0.16)" />
+                <path d="M35,30 Q50,25 55,40 T40,55 Z" fill="rgba(255,255,255,0.09)" />
+                <circle cx="45" cy="15" r="8" fill="rgba(0,0,0,0.12)" />
+            </pattern>
+            <pattern id="pattern-waves" width="30" height="15" patternUnits="userSpaceOnUse">
+                <path d="M0 7.5 Q 7.5 0, 15 7.5 T 30 7.5" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="1.5" />
+            </pattern>
+        </defs>
+    </svg>
+
+    <!-- ===================================================================== -->
+    <!-- 1. TOP HEADER BAR                                                     -->
+    <!-- ===================================================================== -->
+    <header class="h-16 px-4 lg:px-6 bg-studio-900/95 border-b border-white/10 flex items-center justify-between shrink-0 z-30 backdrop-blur-md">
+        <!-- Brand Logo & Version Pill -->
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/25 border border-amber-300/30">
+                <i class="fa-solid fa-shirt text-studio-950 text-lg"></i>
+            </div>
+            <div class="flex items-center gap-2.5">
+                <h1 class="text-lg sm:text-xl font-extrabold tracking-tight text-white">
+                    ATÖLYE<span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">MODA</span>
+                </h1>
+                <span class="px-2.5 py-0.5 text-[11px] font-bold tracking-wide uppercase rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 shadow-sm shadow-amber-500/10 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                    3D Studio v3.0
+                </span>
+            </div>
+        </div>
+
+        <!-- Center Status Pill (Desktop) -->
+        <div class="hidden xl:flex items-center gap-3 px-3.5 py-1.5 rounded-full bg-studio-850 border border-white/5 text-xs text-gray-400">
+            <span class="flex items-center gap-1.5 text-amber-400 font-semibold">
+                <i class="fa-solid fa-cube"></i> Canlı 3D Kumaş Simülasyonu
+            </span>
+            <span class="text-gray-600">|</span>
+            <span id="headerActiveProductLabel" class="text-gray-200 font-medium">Oversized Tişört (Antrasit)</span>
+        </div>
+
+        <!-- Top Right Pill Action Buttons -->
+        <div class="flex items-center gap-2 sm:gap-2.5">
+            <button id="btnSizeGuide" class="px-3.5 py-1.5 rounded-full bg-studio-800 hover:bg-studio-700 text-gray-200 hover:text-white border border-white/10 text-xs font-semibold transition-all flex items-center gap-2 shadow-sm">
+                <i class="fa-solid fa-ruler-combined text-amber-400"></i>
+                <span class="hidden sm:inline">Beden Rehberi</span>
+            </button>
+
+            <button id="btnResetStudio" class="px-3.5 py-1.5 rounded-full bg-studio-800 hover:bg-red-500/20 text-gray-200 hover:text-red-300 border border-white/10 hover:border-red-500/30 text-xs font-semibold transition-all flex items-center gap-2 shadow-sm">
+                <i class="fa-solid fa-rotate-left text-amber-400"></i>
+                <span class="hidden sm:inline">Sıfırla</span>
+            </button>
+
+            <button id="btnDownloadDesign" class="px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-studio-950 font-bold text-xs transition-all flex items-center gap-2 shadow-lg shadow-amber-500/20 active:scale-95">
+                <i class="fa-solid fa-download"></i>
+                <span>Tasarımı İndir</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- ===================================================================== -->
+    <!-- MAIN 3-COLUMN STUDIO LAYOUT                                           -->
+    <!-- ===================================================================== -->
+    <main class="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+
+        <!-- ================================================================= -->
+        <!-- 2. LEFT PANEL: TABS & MODERN PRODUCT CARDS                        -->
+        <!-- ================================================================= -->
+        <aside class="w-full lg:w-[350px] xl:w-[375px] bg-studio-900 border-b lg:border-b-0 lg:border-r border-white/10 flex flex-col shrink-0 z-20 max-h-[42vh] lg:max-h-none">
+            
+            <!-- 5 Modern Navigation Tabs -->
+            <div class="grid grid-cols-5 bg-studio-950/60 p-1.5 gap-1 border-b border-white/10 shrink-0">
+                <button data-tab="urun" class="studio-tab active group relative flex flex-col items-center justify-center py-2 px-1 rounded-xl text-amber-400 bg-studio-800/90 font-semibold text-[11px] transition-all">
+                    <i class="fa-solid fa-shirt text-sm mb-1 transition-transform group-hover:scale-110"></i>
+                    <span>Ürün</span>
+                    <span class="tab-indicator absolute bottom-0.5 w-6 h-0.5 rounded-full bg-amber-400"></span>
+                </button>
+                <button data-tab="renk" class="studio-tab group relative flex flex-col items-center justify-center py-2 px-1 rounded-xl text-gray-400 hover:text-gray-200 font-semibold text-[11px] transition-all">
+                    <i class="fa-solid fa-palette text-sm mb-1 transition-transform group-hover:scale-110"></i>
+                    <span>Renk</span>
+                    <span class="tab-indicator hidden absolute bottom-0.5 w-6 h-0.5 rounded-full bg-amber-400"></span>
+                </button>
+                <button data-tab="yazi" class="studio-tab group relative flex flex-col items-center justify-center py-2 px-1 rounded-xl text-gray-400 hover:text-gray-200 font-semibold text-[11px] transition-all">
+                    <i class="fa-solid fa-font text-sm mb-1 transition-transform group-hover:scale-110"></i>
+                    <span>Yazı</span>
+                    <span class="tab-indicator hidden absolute bottom-0.5 w-6 h-0.5 rounded-full bg-amber-400"></span>
+                </button>
+                <button data-tab="grafik" class="studio-tab group relative flex flex-col items-center justify-center py-2 px-1 rounded-xl text-gray-400 hover:text-gray-200 font-semibold text-[11px] transition-all">
+                    <i class="fa-solid fa-icons text-sm mb-1 transition-transform group-hover:scale-110"></i>
+                    <span>Grafik</span>
+                    <span class="tab-indicator hidden absolute bottom-0.5 w-6 h-0.5 rounded-full bg-amber-400"></span>
+                </button>
+                <button data-tab="desen" class="studio-tab group relative flex flex-col items-center justify-center py-2 px-1 rounded-xl text-gray-400 hover:text-gray-200 font-semibold text-[11px] transition-all">
+                    <i class="fa-solid fa-layer-group text-sm mb-1 transition-transform group-hover:scale-110"></i>
+                    <span>Desen</span>
+                    <span class="tab-indicator hidden absolute bottom-0.5 w-6 h-0.5 rounded-full bg-amber-400"></span>
+                </button>
+            </div>
+
+            <!-- Left Panel Content Container -->
+            <div class="flex-1 overflow-y-auto p-3.5 space-y-4">
+
+                <!-- TAB 1: ÜRÜN (8 Modern 2-Column Product Cards) -->
+                <div id="tab-urun" class="tab-pane space-y-3">
+                    <div class="flex items-center justify-between px-1">
+                        <div>
+                            <h2 class="text-xs font-bold uppercase tracking-wider text-gray-300">Kıyafet Modeli Seçin</h2>
+                            <p class="text-[11px] text-gray-500">3D dokulu kalıplar ve özel renk koleksiyonu</p>
+                        </div>
+                        <span class="text-[11px] font-mono px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20">8 Model</span>
+                    </div>
+
+                    <!-- 2-Column Product Grid -->
+                    <div id="productCardsGrid" class="grid grid-cols-2 gap-2.5">
+                        <!-- Dynamically populated by JS with detailed mini SVG illustrations -->
+                    </div>
+                </div>
+
+                <!-- TAB 2: RENK (3D Model Color Switcher) -->
+                <div id="tab-renk" class="tab-pane hidden space-y-4">
+                    <div>
+                        <h2 class="text-xs font-bold uppercase tracking-wider text-gray-300 mb-1">Kumaş Rengi</h2>
+                        <p class="text-[11px] text-gray-500">Seçtiğiniz renk 3D modele ve dikiş gölgelerine anında uygulanır.</p>
+                    </div>
+
+                    <!-- Studio Curated Swatches -->
+                    <div id="garmentColorSwatches" class="grid grid-cols-4 gap-2.5">
+                        <!-- Dynamically generated swatches -->
+                    </div>
+
+                    <!-- Custom Garment Color Picker -->
+                    <div class="p-3.5 rounded-2xl bg-studio-850 border border-white/10 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <input type="color" id="customGarmentColorPicker" value="#27272a" class="custom-color-input" title="Özel Kumaş Rengi Seç">
+                            <div>
+                                <div class="text-xs font-bold text-gray-200">Özel Renk Paleti</div>
+                                <div id="garmentHexLabel" class="text-[11px] font-mono text-amber-400">#27272A</div>
+                            </div>
+                        </div>
+                        <span class="text-[10px] px-2.5 py-1 rounded-full bg-white/5 text-gray-400 border border-white/10">Canlı 3D</span>
+                    </div>
+                </div>
+
+                <!-- TAB 3: YAZI (Add & Customize Typography) -->
+                <div id="tab-yazi" class="tab-pane hidden space-y-4">
+                    <div>
+                        <h2 class="text-xs font-bold uppercase tracking-wider text-gray-300 mb-1">Tasarım Metni Ekle</h2>
+                        <p class="text-[11px] text-gray-500">Metin ekleyin, font seçin ve çalışma alanında 4 köşeden boyutlandırın.</p>
+                    </div>
+
+                    <div class="space-y-2.5">
+                        <label class="block text-[11px] font-semibold text-gray-400">Metin İçeriği</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="newTextInput" placeholder="Örn: ATÖLYEMODA 99" maxlength="32"
+                                class="flex-1 px-3.5 py-2.5 rounded-xl bg-studio-850 border border-white/10 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 transition-colors select-text">
+                            <button id="btnAddText" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-studio-950 font-bold text-xs shadow-md shadow-amber-500/15 transition-all shrink-0 flex items-center gap-1.5">
+                                <i class="fa-solid fa-plus"></i> Ekle
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Font Family Selection -->
+                    <div class="space-y-2">
+                        <label class="block text-[11px] font-semibold text-gray-400">Yazı Tipi (Font)</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button data-font="'Plus Jakarta Sans', sans-serif" class="font-preset-btn active p-2.5 rounded-xl bg-studio-850 border border-amber-500/60 text-left hover:bg-studio-800 transition-all">
+                                <span class="block text-sm font-bold text-white" style="font-family: 'Plus Jakarta Sans', sans-serif;">Modern Sans</span>
+                                <span class="text-[10px] text-gray-400">Plus Jakarta Bold</span>
+                            </button>
+                            <button data-font="'Bebas Neue', sans-serif" class="font-preset-btn p-2.5 rounded-xl bg-studio-850 border border-white/10 text-left hover:bg-studio-800 transition-all">
+                                <span class="block text-base tracking-wider text-white" style="font-family: 'Bebas Neue', sans-serif;">STREETWEAR</span>
+                                <span class="text-[10px] text-gray-400">Bebas Neue</span>
+                            </button>
+                            <button data-font="'Playfair Display', serif" class="font-preset-btn p-2.5 rounded-xl bg-studio-850 border border-white/10 text-left hover:bg-studio-800 transition-all">
+                                <span class="block text-sm font-bold italic text-white" style="font-family: 'Playfair Display', serif;">Atelier Luxe</span>
+                                <span class="text-[10px] text-gray-400">Playfair Serif</span>
+                            </button>
+                            <button data-font="'JetBrains Mono', monospace" class="font-preset-btn p-2.5 rounded-xl bg-studio-850 border border-white/10 text-left hover:bg-studio-800 transition-all">
+                                <span class="block text-xs font-bold text-white" style="font-family: 'JetBrains Mono', monospace;">CYBER_LAB</span>
+                                <span class="text-[10px] text-gray-400">JetBrains Mono</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Ready-made Slogan Badges -->
+                    <div class="space-y-2 pt-1">
+                        <label class="block text-[11px] font-semibold text-gray-400">Hızlı Sokak Modası Sloganları</label>
+                        <div class="flex flex-wrap gap-1.5">
+                            <button data-slogan="EST. 2026 ISTANBUL" class="quick-slogan-btn px-2.5 py-1.5 rounded-lg bg-studio-850 hover:bg-amber-500/20 border border-white/10 hover:border-amber-500/40 text-[11px] font-semibold text-gray-300 hover:text-amber-300 transition-all">EST. 2026 ISTANBUL</button>
+                            <button data-slogan="LIMITED EDITION" class="quick-slogan-btn px-2.5 py-1.5 rounded-lg bg-studio-850 hover:bg-amber-500/20 border border-white/10 hover:border-amber-500/40 text-[11px] font-semibold text-gray-300 hover:text-amber-300 transition-all">LIMITED EDITION</button>
+                            <button data-slogan="ATÖLYE STUDIO" class="quick-slogan-btn px-2.5 py-1.5 rounded-lg bg-studio-850 hover:bg-amber-500/20 border border-white/10 hover:border-amber-500/40 text-[11px] font-semibold text-gray-300 hover:text-amber-300 transition-all">ATÖLYE STUDIO</button>
+                            <button data-slogan="FUTURE ARCHIVE" class="quick-slogan-btn px-2.5 py-1.5 rounded-lg bg-studio-850 hover:bg-amber-500/20 border border-white/10 hover:border-amber-500/40 text-[11px] font-semibold text-gray-300 hover:text-amber-300 transition-all">FUTURE ARCHIVE</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 4: GRAFİK (Icons, Vector Stickers & Custom Image Upload) -->
+                <div id="tab-grafik" class="tab-pane hidden space-y-4">
+                    <!-- Custom Image Upload Box -->
+                    <div class="p-3.5 rounded-2xl bg-gradient-to-br from-amber-500/10 to-orange-600/5 border border-dashed border-amber-500/40 text-center space-y-2">
+                        <div class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
+                            <i class="fa-solid fa-cloud-arrow-up text-base"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xs font-bold text-white">Kendi Görselini Yükle</h3>
+                            <p class="text-[10px] text-gray-400">PNG, JPG veya SVG (Köşelerden boyutlandırılabilir)</p>
+                        </div>
+                        <label class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-studio-950 font-bold text-xs cursor-pointer transition-all shadow-sm">
+                            <i class="fa-solid fa-folder-open"></i> Görsel Seç
+                            <input type="file" id="imageUploadInput" accept="image/*" class="hidden">
+                        </label>
+                    </div>
+
+                    <!-- Ready Graphic Icons -->
+                    <div>
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-gray-300 mb-2">Vektör İkon & Armalar</h3>
+                        <div id="graphicIconsGrid" class="grid grid-cols-4 gap-2">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 5: DESEN (Fabric Overlay Textures & Stamps) -->
+                <div id="tab-desen" class="tab-pane hidden space-y-4">
+                    <div>
+                        <h2 class="text-xs font-bold uppercase tracking-wider text-gray-300 mb-1">Kumaş Yüzey Deseni</h2>
+                        <p class="text-[11px] text-gray-500">3D kıyafet yüzeyine mikro dokuma veya grafik desen katmanı ekleyin.</p>
+                    </div>
+
+                    <div id="patternCardsGrid" class="grid grid-cols-2 gap-2.5">
+                        <button data-pattern="none" class="pattern-btn active p-3 rounded-xl bg-studio-850 border border-amber-500 text-left flex items-center gap-3 transition-all">
+                            <div class="w-9 h-9 rounded-lg bg-studio-700 border border-white/10 flex items-center justify-center text-amber-400">
+                                <i class="fa-solid fa-ban"></i>
+                            </div>
+                            <div>
+                                <div class="text-xs font-bold text-white">Saf Pamuk</div>
+                                <div class="text-[10px] text-gray-400">Standart Doku</div>
+                            </div>
+                        </button>
+
+                        <button data-pattern="url(#pattern-grid)" class="pattern-btn p-3 rounded-xl bg-studio-850 border border-white/10 text-left flex items-center gap-3 hover:border-white/25 transition-all">
+                            <div class="w-9 h-9 rounded-lg bg-studio-700 border border-white/10 flex items-center justify-center text-amber-400">
+                                <i class="fa-solid fa-border-all"></i>
+                            </div>
+                            <div>
+                                <div class="text-xs font-bold text-white">Teknik Grid</div>
+                                <div class="text-[10px] text-gray-400">Geometrik Çizgi</div>
+                            </div>
+                        </button>
+
+                        <button data-pattern="url(#pattern-dots)" class="pattern-btn p-3 rounded-xl bg-studio-850 border border-white/10 text-left flex items-center gap-3 hover:border-white/25 transition-all">
+                            <div class="w-9 h-9 rounded-lg bg-studio-700 border border-white/10 flex items-center justify-center text-amber-400">
+                                <i class="fa-solid fa-braille"></i>
+                            </div>
+                            <div>
+                                <div class="text-xs font-bold text-white">Polka Nokta</div>
+                                <div class="text-[10px] text-gray-400">Minimal Puantiye</div>
+                            </div>
+                        </button>
+
+                        <button data-pattern="url(#pattern-diag)" class="pattern-btn p-3 rounded-xl bg-studio-850 border border-white/10 text-left flex items-center gap-3 hover:border-white/25 transition-all">
+                            <div class="w-9 h-9 rounded-lg bg-studio-700 border border-white/10 flex items-center justify-center text-amber-400">
+                                <i class="fa-solid fa-grip-lines"></i>
+                            </div>
+                            <div>
+                                <div class="text-xs font-bold text-white">Diyagonal Twill</div>
+                                <div class="text-[10px] text-gray-400">Çapraz Dokuma</div>
+                            </div>
+                        </button>
+
+                        <button data-pattern="url(#pattern-camo)" class="pattern-btn p-3 rounded-xl bg-studio-850 border border-white/10 text-left flex items-center gap-3 hover:border-white/25 transition-all">
+                            <div class="w-9 h-9 rounded-lg bg-studio-700 border border-white/10 flex items-center justify-center text-amber-400">
+                                <i class="fa-solid fa-shapes"></i>
+                            </div>
+                            <div>
+                                <div class="text-xs font-bold text-white">Kent Kamuflaj</div>
+                                <div class="text-[10px] text-gray-400">Sokak Stili</div>
+                            </div>
+                        </button>
+
+                        <button data-pattern="url(#pattern-waves)" class="pattern-btn p-3 rounded-xl bg-studio-850 border border-white/10 text-left flex items-center gap-3 hover:border-white/25 transition-all">
+                            <div class="w-9 h-9 rounded-lg bg-studio-700 border border-white/10 flex items-center justify-center text-amber-400">
+                                <i class="fa-solid fa-water"></i>
+                            </div>
+                            <div>
+                                <div class="text-xs font-bold text-white">Akustik Dalga</div>
+                                <div class="text-[10px] text-gray-400">Dinamik Çizgi</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- ================================================================= -->
+        <!-- 3. CENTER WORKSPACE: REALISTIC 3D GARMENT & PERSPECTIVE GRID      -->
+        <!-- ================================================================= -->
+        <section id="studioWorkspace" class="studio-workspace flex-1 flex flex-col items-center justify-between py-4 px-4 select-none">
+            
+            <!-- Ambient Back Grid & Radial Spotlight & 3D Perspective Floor Grid -->
+            <div class="studio-back-grid"></div>
+            <div id="studioSpotlight" class="studio-spotlight"></div>
+            <div class="studio-perspective-grid"></div>
+
+            <!-- Top Floating Instruction Badge -->
+            <div class="relative z-30 flex items-center gap-2">
+                <div class="px-4 py-1.5 rounded-full bg-studio-900/90 border border-amber-500/30 shadow-lg shadow-black/40 backdrop-blur-md flex items-center gap-2 text-xs font-medium text-gray-200">
+                    <span>🔥</span>
+                    <span>Öğeleri sürükleyip köşelerinden boyutlandırabilirsiniz</span>
+                </div>
+                <button id="btnToggle3DTilt" class="px-3 py-1.5 rounded-full bg-studio-900/90 hover:bg-studio-800 border border-white/10 text-[11px] font-semibold text-amber-400 backdrop-blur-md flex items-center gap-1.5 transition-all" title="Mouse 3D Eğim Efektini Aç/Kapat">
+                    <i class="fa-solid fa-cube"></i>
+                    <span id="tiltStatusText">3D Eğim: Açık</span>
+                </button>
+            </div>
+
+            <!-- Center Interactive 3D Garment Stage -->
+            <div class="relative flex-1 w-full flex items-center justify-center my-1">
+                <div id="garment3DStage" class="garment-3d-stage relative w-[360px] h-[420px] sm:w-[440px] sm:h-[490px] flex items-center justify-center">
+                    
+                    <!-- Floor Contact Shadow -->
+                    <div id="garmentFloorShadow" class="garment-floor-shadow"></div>
+
+                    <!-- Flip Wrapper for Ön Yüz / Arka Yüz -->
+                    <div id="garmentFlipWrapper" class="garment-flip-wrapper flex items-center justify-center">
+                        
+                        <!-- REALISTIC 3D SVG GARMENT (Dynamically renders Oversized T-Shirt or Hoodie, Front or Back) -->
+                        <svg id="garmentMainSvg" viewBox="0 0 500 560" class="w-full h-full drop-shadow-2xl pointer-events-none overflow-visible">
+                            <!-- Populated & updated dynamically by render3DGarment() -->
+                        </svg>
+
+                        <!-- Interactive Dashed Print Boundary (Göğüs / Sırt Baskı Alanı) -->
+                        <div id="printBoundary" class="print-boundary">
+                            <span id="printBoundaryLabel" class="print-boundary-label">ÖN GÖĞÜS BASKI ALANI</span>
+                            <!-- Design elements (front or back) are mounted here -->
+                            <div id="designElementsLayer" class="relative w-full h-full"></div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom View Switcher Pill: [ Ön Yüz ] [ Arka Yüz ] -->
+            <div class="relative z-30 flex items-center gap-3">
+                <div class="p-1 rounded-full bg-studio-900/95 border border-white/10 shadow-xl backdrop-blur-md flex items-center">
+                    <button id="btnViewFront" class="px-5 py-1.5 rounded-full text-xs font-bold transition-all bg-gradient-to-r from-amber-500 to-orange-600 text-studio-950 shadow-md">
+                        Ön Yüz
+                    </button>
+                    <button id="btnViewBack" class="px-5 py-1.5 rounded-full text-xs font-bold transition-all text-gray-400 hover:text-white">
+                        Arka Yüz
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- 4. RIGHT PANEL: ELEMENT INSPECTOR, COLOR, SIZE SLIDER & CHECKOUT  -->
+        <!-- ================================================================= -->
+        <aside class="w-full lg:w-[330px] xl:w-[350px] bg-studio-900 border-t lg:border-t-0 lg:border-l border-white/10 flex flex-col justify-between shrink-0 z-20 overflow-y-auto">
+            
+            <div class="p-4 space-y-4">
+                
+                <!-- SELECTED ELEMENT INSPECTOR PANEL (Öğe Kontrol Paneli) -->
+                <div id="elementInspectorCard" class="p-4 rounded-2xl bg-studio-850 border border-amber-500/30 shadow-lg space-y-3.5 transition-all">
+                    <div class="flex items-center justify-between border-b border-white/10 pb-2.5">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></span>
+                            <h2 class="text-xs font-extrabold uppercase tracking-wider text-white">Öğe Kontrol Paneli</h2>
+                        </div>
+                        <span id="selectedElementTypeBadge" class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                            METİN SEÇİLİ
+                        </span>
+                    </div>
+
+                    <!-- Empty State when no element is selected -->
+                    <div id="inspectorEmptyState" class="hidden py-5 text-center space-y-2">
+                        <div class="w-10 h-10 rounded-full bg-studio-800 text-gray-500 flex items-center justify-center mx-auto">
+                            <i class="fa-solid fa-arrow-pointer"></i>
+                        </div>
+                        <p class="text-xs text-gray-400 font-medium">Düzenlemek için tişört üzerindeki bir yazıya, ikona veya görsele tıklayın.</p>
+                    </div>
+
+                    <!-- Active Controls when an element is selected -->
+                    <div id="inspectorActiveControls" class="space-y-4">
+                        
+                        <!-- Editable Text Input (Only visible if text element is selected) -->
+                        <div id="inspectorTextEditGroup" class="space-y-1.5">
+                            <label class="block text-[11px] font-semibold text-gray-400">Seçili Metin</label>
+                            <input type="text" id="inspectorTextInput" class="w-full px-3 py-1.5 rounded-xl bg-studio-900 border border-white/10 text-xs text-white focus:outline-none focus:border-amber-500 select-text">
+                        </div>
+
+                        <!-- 1. ÖĞE RENK KONTROLÜ (Color Picker + 8 Quick Color Buttons) -->
+                        <div id="inspectorColorSection" class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <label class="text-[11px] font-semibold text-gray-300 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-droplet text-amber-400"></i> Öğe Renk Kontrolü
+                                </label>
+                                <span id="elementColorDisabledNotice" class="hidden text-[10px] text-amber-400/90 bg-amber-500/10 px-2 py-0.5 rounded">Görselde devre dışı</span>
+                            </div>
+
+                            <div id="elementColorControlsWrap" class="flex items-center gap-2">
+                                <!-- Full Color Picker -->
+                                <input type="color" id="elementColorPicker" value="#ffffff" class="custom-color-input shrink-0" title="Tam Renk Paleti">
+                                
+                                <!-- 8 Quick Color Buttons (Beyaz, Siyah, Amber, Kırmızı, Mavi, Yeşil, Mor, Pembe) -->
+                                <div class="grid grid-cols-8 gap-1.5 flex-1">
+                                    <button data-el-color="#ffffff" title="Beyaz" class="el-quick-color w-6 h-6 rounded-lg bg-white border-2 border-amber-400 shadow-sm hover:scale-110 transition-transform"></button>
+                                    <button data-el-color="#111827" title="Siyah" class="el-quick-color w-6 h-6 rounded-lg bg-gray-900 border border-white/30 shadow-sm hover:scale-110 transition-transform"></button>
+                                    <button data-el-color="#f59e0b" title="Amber" class="el-quick-color w-6 h-6 rounded-lg bg-amber-500 border border-white/20 shadow-sm hover:scale-110 transition-transform"></button>
+                                    <button data-el-color="#ef4444" title="Kırmızı" class="el-quick-color w-6 h-6 rounded-lg bg-red-500 border border-white/20 shadow-sm hover:scale-110 transition-transform"></button>
+                                    <button data-el-color="#3b82f6" title="Mavi" class="el-quick-color w-6 h-6 rounded-lg bg-blue-500 border border-white/20 shadow-sm hover:scale-110 transition-transform"></button>
+                                    <button data-el-color="#10b981" title="Yeşil" class="el-quick-color w-6 h-6 rounded-lg bg-emerald-500 border border-white/20 shadow-sm hover:scale-110 transition-transform"></button>
+                                    <button data-el-color="#8b5cf6" title="Mor" class="el-quick-color w-6 h-6 rounded-lg bg-violet-500 border border-white/20 shadow-sm hover:scale-110 transition-transform"></button>
+                                    <button data-el-color="#ec4899" title="Pembe" class="el-quick-color w-6 h-6 rounded-lg bg-pink-500 border border-white/20 shadow-sm hover:scale-110 transition-transform"></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. ÖĞE BOYUT KAYDIRICISI (Size Slider 12px - 160px) -->
+                        <div class="space-y-1.5">
+                            <div class="flex items-center justify-between">
+                                <label class="text-[11px] font-semibold text-gray-300 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-up-right-and-down-left-from-center text-amber-400"></i> Öğe Boyutu
+                                </label>
+                                <span id="elementSizeValueBadge" class="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">34px</span>
+                            </div>
+                            <input type="range" id="elementSizeSlider" min="12" max="160" value="34" class="studio-slider">
+                            <div class="flex justify-between text-[10px] text-gray-500 font-mono">
+                                <span>12px</span>
+                                <span>86px</span>
+                                <span>160px</span>
+                            </div>
+                        </div>
+
+                        <!-- 3. DÖNDÜRME & AKSİYON BUTONLARI -->
+                        <div class="space-y-1.5">
+                            <div class="flex items-center justify-between">
+                                <label class="text-[11px] font-semibold text-gray-300 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-rotate text-amber-400"></i> Döndürme Açısı
+                                </label>
+                                <span id="elementRotationValueBadge" class="text-xs font-mono text-gray-300">0°</span>
+                            </div>
+                            <input type="range" id="elementRotationSlider" min="-180" max="180" value="0" class="studio-slider">
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2 pt-1">
+                            <button id="btnCenterElement" class="py-2 px-2 rounded-xl bg-studio-800 hover:bg-studio-700 text-gray-200 text-[11px] font-semibold border border-white/10 flex items-center justify-center gap-1.5 transition-all" title="Ortala">
+                                <i class="fa-solid fa-crosshairs text-amber-400"></i> Ortala
+                            </button>
+                            <button id="btnDuplicateElement" class="py-2 px-2 rounded-xl bg-studio-800 hover:bg-studio-700 text-gray-200 text-[11px] font-semibold border border-white/10 flex items-center justify-center gap-1.5 transition-all" title="Çoğalt">
+                                <i class="fa-regular fa-clone text-amber-400"></i> Çoğalt
+                            </button>
+                            <button id="btnDeleteElement" class="py-2 px-2 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-300 text-[11px] font-semibold border border-red-500/30 flex items-center justify-center gap-1.5 transition-all" title="Sil">
+                                <i class="fa-regular fa-trash-can"></i> Sil
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PRODUCT SIZE SELECTOR (Beden Seçimi S - 2XL) -->
+                <div class="p-4 rounded-2xl bg-studio-850 border border-white/10 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold uppercase tracking-wider text-gray-300">Kalıp & Beden Seçimi</span>
+                        <span class="text-[11px] text-amber-400 font-medium">Tam Kalıp</span>
+                    </div>
+                    <div id="sizeSelectorGroup" class="grid grid-cols-5 gap-2">
+                        <button data-size="S" class="size-btn py-2 rounded-xl bg-studio-900 hover:bg-studio-800 text-gray-300 font-bold text-xs border border-white/10 transition-all">S</button>
+                        <button data-size="M" class="size-btn py-2 rounded-xl bg-studio-900 hover:bg-studio-800 text-gray-300 font-bold text-xs border border-white/10 transition-all">M</button>
+                        <button data-size="L" class="size-btn active py-2 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-studio-950 font-extrabold text-xs border border-amber-300/40 shadow-md shadow-amber-500/20 transition-all">L</button>
+                        <button data-size="XL" class="size-btn py-2 rounded-xl bg-studio-900 hover:bg-studio-800 text-gray-300 font-bold text-xs border border-white/10 transition-all">XL</button>
+                        <button data-size="2XL" class="size-btn py-2 rounded-xl bg-studio-900 hover:bg-studio-800 text-gray-300 font-bold text-xs border border-white/10 transition-all">2XL</button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- BOTTOM PRICE SUMMARY & ORDER CTA -->
+            <div class="p-4 bg-studio-950/90 border-t border-white/10 space-y-3">
+                <div class="space-y-1.5 text-xs">
+                    <div class="flex justify-between text-gray-400">
+                        <span>Seçili Ürün & Özel Baskı:</span>
+                        <span id="summaryProductType" class="text-gray-200 font-medium">Oversized Tişört</span>
+                    </div>
+                    <div class="flex justify-between text-gray-400">
+                        <span>Tasarım Katmanları:</span>
+                        <span id="summaryLayerCount" class="text-amber-400 font-mono">2 Öğe (Ön/Arka)</span>
+                    </div>
+                    <div class="flex items-baseline justify-between pt-2 border-t border-white/10">
+                        <span class="text-xs font-bold uppercase tracking-wider text-gray-300">Toplam Tutar</span>
+                        <div class="text-right">
+                            <span id="totalPriceDisplay" class="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">350 ₺</span>
+                            <span class="block text-[10px] text-emerald-400 font-medium">KDV Dahil • Ücretsiz Kargo</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="btnCompleteOrder" class="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-studio-950 font-extrabold text-sm tracking-wide shadow-xl shadow-amber-500/25 flex items-center justify-center gap-2.5 transition-all active:scale-[0.99]">
+                    <span>🔒</span>
+                    <span>Siparişi Tamamla</span>
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                </button>
+            </div>
+
+        </aside>
+    </main>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL 1: BEDEN REHBERİ (SIZE GUIDE MODAL)                             -->
+    <!-- ===================================================================== -->
+    <div id="sizeGuideModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-studio-900 border border-white/15 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 animate-fadeIn">
+            <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center">
+                        <i class="fa-solid fa-ruler-combined"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-extrabold text-white">ATÖLYEMODA Beden Rehberi</h3>
+                        <p class="text-xs text-gray-400">Oversized & Sweatshirt Kalıp Ölçüleri (cm)</p>
+                    </div>
+                </div>
+                <button id="btnCloseSizeModal" class="w-8 h-8 rounded-full bg-studio-800 hover:bg-studio-700 text-gray-400 hover:text-white flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="border-b border-white/10 text-amber-400 uppercase font-mono">
+                            <th class="py-2.5 px-3">Beden</th>
+                            <th class="py-2.5 px-3">Göğüs Eni (A)</th>
+                            <th class="py-2.5 px-3">Boy Uzunluğu (B)</th>
+                            <th class="py-2.5 px-3">Kol Boyu (C)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5 text-gray-300">
+                        <tr class="hover:bg-white/5"><td class="py-2.5 px-3 font-bold text-white">S</td><td class="py-2.5 px-3">56 cm</td><td class="py-2.5 px-3">71 cm</td><td class="py-2.5 px-3">23 cm</td></tr>
+                        <tr class="hover:bg-white/5"><td class="py-2.5 px-3 font-bold text-white">M</td><td class="py-2.5 px-3">58 cm</td><td class="py-2.5 px-3">73 cm</td><td class="py-2.5 px-3">24 cm</td></tr>
+                        <tr class="bg-amber-500/10 text-amber-300"><td class="py-2.5 px-3 font-bold">L (Önerilen)</td><td class="py-2.5 px-3">61 cm</td><td class="py-2.5 px-3">75 cm</td><td class="py-2.5 px-3">25 cm</td></tr>
+                        <tr class="hover:bg-white/5"><td class="py-2.5 px-3 font-bold text-white">XL</td><td class="py-2.5 px-3">64 cm</td><td class="py-2.5 px-3">77 cm</td><td class="py-2.5 px-3">26 cm</td></tr>
+                        <tr class="hover:bg-white/5"><td class="py-2.5 px-3 font-bold text-white">2XL</td><td class="py-2.5 px-3">67 cm</td><td class="py-2.5 px-3">79 cm</td><td class="py-2.5 px-3">27 cm</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="p-3 rounded-xl bg-studio-850 border border-white/10 text-[11px] text-gray-400 flex items-center gap-2.5">
+                <i class="fa-solid fa-circle-info text-amber-400 text-sm"></i>
+                <span>Ürünlerimiz %100 1. sınıf ağır gramajlı (240 GSM / 360 GSM şardonsuz) pamuk kumaştan üretilmektedir.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL 2: SİPARİŞ ONAY MODALI (ORDER CHECKOUT MODAL)                   -->
+    <!-- ===================================================================== -->
+    <div id="orderModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-studio-900 border border-amber-500/30 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5">
+            <div class="flex items-center justify-between">
+                <span class="px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5">
+                    <i class="fa-solid fa-check-circle"></i> Tasarım Üretime Hazır
+                </span>
+                <button id="btnCloseOrderModal" class="w-8 h-8 rounded-full bg-studio-800 hover:bg-studio-700 text-gray-400 hover:text-white flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div>
+                <h3 class="text-lg font-extrabold text-white">Özel Tasarım Sipariş Özeti</h3>
+                <p class="text-xs text-gray-400">3D Stüdyoda hazırladığınız tasarım yüksek çözünürlüklü DTF/Serigrafi baskıya aktarılacaktır.</p>
+            </div>
+
+            <div id="orderSummaryDetails" class="p-4 rounded-2xl bg-studio-850 border border-white/10 space-y-2.5 text-xs">
+                <!-- Populated dynamically -->
+            </div>
+
+            <div class="flex gap-3">
+                <button id="btnConfirmOrderFinal" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-studio-950 font-extrabold text-xs shadow-lg shadow-amber-500/20 transition-all">
+                    Siparişi Onayla ve Gönder
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="studioToast" class="fixed bottom-5 right-5 z-50 pointer-events-none opacity-0 translate-y-3 transition-all duration-300">
+        <div class="px-4 py-2.5 rounded-2xl bg-studio-900/95 border border-amber-500/40 shadow-2xl backdrop-blur-md flex items-center gap-2.5 text-xs font-semibold text-white">
+            <i id="studioToastIcon" class="fa-solid fa-wand-magic-sparkles text-amber-400"></i>
+            <span id="studioToastText">İşlem tamamlandı</span>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- APPLICATION JAVASCRIPT                                                -->
+    <!-- ===================================================================== -->
+    <script>
+        /***********************************************************************
+         * 1. STUDIO DATA: 8 EXACT MODERN PRODUCT CARDS & COLOR SWATCHES
+         ***********************************************************************/
+        const PRODUCTS = [
+            {
+                id: 'prod-1',
+                name: 'Oversized Tişört',
+                subName: 'Antrasit',
+                type: 'tshirt',
+                color: '#27272a',
+                price: 350,
+                badge: 'Popüler'
+            },
+            {
+                id: 'prod-2',
+                name: 'Kapüşonlu Sweatshirt',
+                subName: 'Koyu Gri',
+                type: 'hoodie',
+                color: '#3f3f46',
+                price: 350,
+                badge: '3 İplik'
+            },
+            {
+                id: 'prod-3',
+                name: 'Oversized Tişört',
+                subName: 'Canlı Mavi',
+                type: 'tshirt',
+                color: '#2563eb',
+                price: 350,
+                badge: 'Yeni'
+            },
+            {
+                id: 'prod-4',
+                name: 'Kapüşonlu Sweatshirt',
+                subName: 'Canlı Sarı',
+                type: 'hoodie',
+                color: '#eab308',
+                price: 350,
+                badge: 'Trend'
+            },
+            {
+                id: 'prod-5',
+                name: 'Oversized Tişört',
+                subName: 'Şeftali / Bej',
+                type: 'tshirt',
+                color: '#e8b4a2',
+                price: 350,
+                badge: 'Soft'
+            },
+            {
+                id: 'prod-6',
+                name: 'Kapüşonlu Sweatshirt',
+                subName: 'Kraliyet Mavisi',
+                type: 'hoodie',
+                color: '#1e3a8a',
+                price: 350,
+                badge: 'Premium'
+            },
+            {
+                id: 'prod-7',
+                name: 'Mayon Tişört',
+                subName: 'Klasik Beyaz',
+                type: 'tshirt',
+                color: '#f1f5f9',
+                price: 350,
+                badge: '%100 Pamuk'
+            },
+            {
+                id: 'prod-8',
+                name: 'Kapüşonlu Sweatshirt',
+                subName: 'Mint / Nane Yeşili',
+                type: 'hoodie',
+                color: '#6ee7b7',
+                price: 350,
+                badge: 'Fresh'
+            }
+        ];
+
+        const GARMENT_SWATCHES = [
+            { name: 'Antrasit', hex: '#27272a' },
+            { name: 'Koyu Gri', hex: '#3f3f46' },
+            { name: 'Gece Siyahı', hex: '#141418' },
+            { name: 'Klasik Beyaz', hex: '#f1f5f9' },
+            { name: 'Canlı Mavi', hex: '#2563eb' },
+            { name: 'Kraliyet Mavisi', hex: '#1e3a8a' },
+            { name: 'Canlı Sarı', hex: '#eab308' },
+            { name: 'Şeftali / Bej', hex: '#e8b4a2' },
+            { name: 'Mint Yeşili', hex: '#6ee7b7' },
+            { name: 'Kiremit Turuncu', hex: '#ea580c' },
+            { name: 'Bordo Kırmızı', hex: '#991b1b' },
+            { name: 'Derin Mor', hex: '#4c1d95' }
+        ];
+
+        const GRAPHIC_ICONS = [
+            { icon: 'fa-solid fa-fire-flame-curved', label: 'Alev' },
+            { icon: 'fa-solid fa-bolt-lightning', label: 'Şimşek' },
+            { icon: 'fa-solid fa-crown', label: 'Taç' },
+            { icon: 'fa-solid fa-skull', label: 'Kurukafa' },
+            { icon: 'fa-solid fa-dragon', label: 'Ejderha' },
+            { icon: 'fa-solid fa-heart', label: 'Kalp' },
+            { icon: 'fa-solid fa-star', label: 'Yıldız' },
+            { icon: 'fa-solid fa-rocket', label: 'Roket' },
+            { icon: 'fa-solid fa-ghost', label: 'Hayalet' },
+            { icon: 'fa-solid fa-compass', label: 'Pusula' },
+            { icon: 'fa-solid fa-globe', label: 'Dünya' },
+            { icon: 'fa-solid fa-fingerprint', label: 'İz' }
+        ];
+
+        /***********************************************************************
+         * 2. APPLICATION STATE
+         ***********************************************************************/
+        const state = {
+            selectedProductId: 'prod-1',
+            garmentType: 'tshirt', // 'tshirt' | 'hoodie'
+            garmentColor: '#27272a',
+            garmentPattern: 'none',
+            activeSide: 'front', // 'front' | 'back'
+            selectedSize: 'L',
+            activeFont: "'Plus Jakarta Sans', sans-serif",
+            tiltEnabled: true,
+            selectedElementId: 'el-default-1',
+            elements: {
+                front: [
+                    {
+                        id: 'el-default-1',
+                        type: 'text',
+                        content: 'ATÖLYEMODA',
+                        x: 24,
+                        y: 68,
+                        size: 26,
+                        color: '#f59e0b',
+                        fontFamily: "'Bebas Neue', sans-serif",
+                        rotation: 0
+                    },
+                    {
+                        id: 'el-default-2',
+                        type: 'icon',
+                        content: 'fa-solid fa-fire-flame-curved',
+                        x: 72,
+                        y: 115,
+                        size: 44,
+                        color: '#ffffff',
+                        rotation: 0
+                    }
+                ],
+                back: [
+                    {
+                        id: 'el-back-1',
+                        type: 'text',
+                        content: 'STUDIO 03',
+                        x: 34,
+                        y: 80,
+                        size: 32,
+                        color: '#ffffff',
+                        fontFamily: "'Bebas Neue', sans-serif",
+                        rotation: 0
+                    }
+                ]
+            }
+        };
+
+        /***********************************************************************
+         * 3. HELPER: COLOR LUMINANCE & SHADING CALCULATIONS FOR 3D SVG
+         ***********************************************************************/
+        function adjustHexBrightness(hex, percent) {
+            let cleanHex = hex.replace('#', '');
+            if (cleanHex.length === 3) {
+                cleanHex = cleanHex.split('').map(c => c + c).join('');
+            }
+            const num = parseInt(cleanHex, 16);
+            let r = (num >> 16) + percent;
+            let g = ((num >> 8) & 0x00FF) + percent;
+            
